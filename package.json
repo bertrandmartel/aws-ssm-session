@@ -1,0 +1,25 @@
+{
+  "name": "ssm-session",
+  "version": "1.0.0",
+  "description": "Javascript library for starting an AWS SSM session compatible with Browser and NodeJS",
+  "main": "ssm.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+ssh://git@github.com/bertrandmartel/aws-ssm-session.git"
+  },
+  "keywords": [
+    "aws",
+    "ssm",
+    "shell",
+    "terminal"
+  ],
+  "author": "Bertrand Martel",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/bertrandmartel/aws-ssm-session/issues"
+  },
+  "homepage": "https://github.com/bertrandmartel/aws-ssm-session#readme"
+}

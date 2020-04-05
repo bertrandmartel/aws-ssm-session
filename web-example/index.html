@@ -1,0 +1,139 @@
+<!doctype html>
+<html lang="en">
+  <head>
+	<meta charset="utf-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+
+	<link rel="stylesheet" href="vendor/css/bootstrap.min.css">
+	<link rel="stylesheet" href="vendor/css/xterm.css" />
+	<title>AWS SSM session for JS</title>
+	<style>
+	.websocketParams {
+		margin: 20px;
+	}
+	.alertMessage {
+		position: absolute; 
+		bottom: 0; 
+		left: 0; 
+		margin:20px;
+	}
+	</style>
+  </head>
+  <body>
+	 <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+		<a class="navbar-brand" href="#">AWS SSM session for JS</a>
+		<button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarSupportedContent" aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
+		<span class="navbar-toggler-icon"></span>
+		</button>
+		<div class="collapse navbar-collapse" id="navbarSupportedContent"></div>
+	</nav>
+	<form class="websocketParams">
+
+	  <div class="form-group">
+	    <label for="websocketStreamURL">Websocket Stream URL</label>
+	    <input class="form-control" id="websocketStreamURL" placeholder="wss://ssmmessages.eu-west-3.amazonaws.com/v1/data-channel/..." aria-describedby="emailHelp">
+	  </div>
+	  <div class="form-group">
+	    <label for="tokenValue">Token value</label>
+	    <input class="form-control" id="tokenValue">
+	  </div>
+	  <div class="form-group">
+	    <label>Credentials can only be used once. When a session is closed you must enter a new stream URL and a new token value to start a new session</label>
+	  </div>
+	  <button type="button" onclick="startSession()" class="btn btn-primary">Start Session</button>
+	  <button type="button" onclick="stopSession()" class="btn btn-danger">Stop Session</button>
+	  <div id="terminal" style='margin-top:20px;'></div>
+	  	<div class="toast alertMessage" role="alert" aria-live="assertive" aria-atomic="true" id="alertMessage">
+			<div class="toast-header">
+				<strong class="mr-auto">Alert</strong>
+				<small></small>
+				<button type="button" class="ml-2 mb-1 close" data-dismiss="toast" aria-label="Close">
+				  <span aria-hidden="true">&times;</span>
+				</button>
+			</div>
+			<div class="toast-body" id="toastMessage">
+			</div>
+		</div>
+	</form>
+	 <script src="vendor/js/jquery-3.4.1.slim.min.js"></script>
+	 <script src="vendor/js/bootstrap.min.js"></script>
+	 <script src="vendor/js/xterm.min.js"></script>
+	 <script src="../ssm.js"></script>
+	 <script>
+	 	const ssm = window.ssm
+
+		var socket;
+		var terminal;
+
+		const termOptions = {
+		  rows: 34,
+		  cols: 197
+		};
+
+		$(document).ready(function() {
+		  console.log( "ready!" );
+		  $('.toast').toast({
+		    delay: 3500
+		  })
+		});
+
+		function startSession(){
+		  var tokenValue = document.getElementById("tokenValue").value;
+		  var websocketStreamURL = document.getElementById("websocketStreamURL").value;
+		  if (!tokenValue){
+		    showMessage("Token value is required to start session")
+		    return
+		  }
+		  if (!websocketStreamURL) {
+		    showMessage("Websocket stream URL is required to start session")
+		    return 
+		  }
+
+		  socket = new WebSocket(websocketStreamURL);
+		  socket.binaryType = "arraybuffer";
+		  initTerminal()
+
+		  socket.addEventListener('open', function (event) {
+		    ssm.init(socket, {
+		      token: tokenValue,
+		      termOptions: termOptions
+		    });
+		  });
+		  socket.addEventListener('close', function (event) {
+		    showMessage("Websocket closed")
+		  });
+		  socket.addEventListener('message', function (event) {
+		    var agentMessage = ssm.SSMDecode(event.data);
+		    //console.log(agentMessage);
+		    if (agentMessage.payloadType === 1){
+		      ssm.sendACK(socket, agentMessage);
+		      terminal.write(agentMessage.payload)
+		    }
+		  });
+		}
+
+		function stopSession(){
+		  if (socket){
+		    socket.close();
+		  }
+		  terminal.dispose()
+		}
+
+		function showMessage(message){
+		  $('#toastMessage').text(message)
+		  $('#alertMessage').toast('show')
+		}
+
+		function initTerminal() {
+		  terminal = new window.Terminal(termOptions);
+		  terminal.open(document.getElementById('terminal'));
+		  terminal.onKey(e => {
+		    ssm.sendText(socket, e.key);
+		  });
+		  terminal.on('paste', function(data) {
+		  	ssm.sendText(socket, data);
+		  });
+		}
+	 </script>
+  </body>
+</html>

@@ -1,0 +1,16 @@
+{
+  "name": "aws-ssm-session-node",
+  "version": "1.0.0",
+  "description": "",
+  "main": "app.js",
+  "scripts": {
+    "start": "node app.js",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "Bertrand Martel",
+  "license": "MIT",
+  "dependencies": {
+    "uuid": "^7.0.3",
+    "ws": "^7.2.3"
+  }
+}

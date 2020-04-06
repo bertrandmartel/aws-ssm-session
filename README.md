@@ -1,6 +1,10 @@
 # AWS SSM Session for Javascript
 
+![build](https://github.com/bertrandmartel/aws-ssm-session/workflows/build/badge.svg) [![License](http://img.shields.io/:license-mit-blue.svg)](LICENSE.md)
+
 Javascript library for starting an AWS SSM session compatible with Browser and NodeJS
+
+[![npm package](https://nodei.co/npm/ssm-session.png?downloads=true&downloadRank=true&stars=true)](https://www.npmjs.com/package/ssm-session)
 
 Start a shell session in the Browser            |  Start a shell session using NodeJS
 :-------------------------:|:-------------------------:

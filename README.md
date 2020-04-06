@@ -4,8 +4,7 @@ Javascript library for starting an AWS SSM session compatible with Browser and N
 
 Start a shell session in the Browser            |  Start a shell session using NodeJS
 :-------------------------:|:-------------------------:
-![web](https://user-images.githubusercontent.com/5183022/78464154-1b40ab00-76e6-11ea-92d0-2a81a600c7b9.png)  | ![node](https://user-images.githubusercontent.com/5183022/78464152-1a0f7e00-76e6-11ea-8374-5a874d7cf226.png)
-
+![web](https://user-images.githubusercontent.com/5183022/78514983-5ad5c880-77b4-11ea-80cb-a35a1bbfd7ff.png)  | ![node](https://user-images.githubusercontent.com/5183022/78514982-5a3d3200-77b4-11ea-8cc9-d7d3fdc060de.png)
 
 ## About AWS System Manager Session Manager
 
@@ -65,7 +64,7 @@ import { ssm } from "ssm-session";
 
 ### Browser
 
-The following code start a session and use [Xterm.js](https://xtermjs.org/) to write the result to and to listen to key events :
+The following code starts a session and use [Xterm.js](https://xtermjs.org/) to write the result and listen to key events :
 
 ```javascript
 import { ssm } from "ssm-session";
@@ -113,20 +112,20 @@ function stopSession(){
 }
 
 function initTerminal() {
-	terminal = new window.Terminal(termOptions);
-	terminal.open(document.getElementById('terminal'));
-	terminal.onKey(e => {
-		ssm.sendText(socket, e.key);
-	});
-	terminal.on('paste', function(data) {
-		ssm.sendText(socket, data);
-	});
+  terminal = new window.Terminal(termOptions);
+  terminal.open(document.getElementById('terminal'));
+  terminal.onKey(e => {
+    ssm.sendText(socket, e.key);
+  });
+  terminal.on('paste', function(data) {
+    ssm.sendText(socket, data);
+  });
 }
 ```
 
 ### NodeJS
 
-The following code use [ws](https://github.com/websockets/ws) as websocket client and listens to key events :
+The following code uses [ws](https://github.com/websockets/ws) as websocket client and listens to key events :
 
 ```javascript
 "use strict"
@@ -142,48 +141,48 @@ const termOptions = {
 };
 
 (async () => {
-	var startSessionRes = {
-		TokenValue: "your-token-value",
-		StreamUrl: "ws://xxxxxxxxxxx"
-	};
-
-	const rl = readline.createInterface({
-		input: process.stdin,
-		output: null
-	});
-	readline.emitKeypressEvents(process.stdin);
-	process.stdin.on('keypress', (str, key) => {
-		if (connection.readyState === connection.OPEN) {
-			ssm.sendText(connection, str);
-		}
-	});
-	
-	const WebSocket = require('ws')
-	const connection = new WebSocket(startSessionRes.StreamUrl)
-
-	connection.onopen = () => {
-		ssm.init(connection, {
-			token: startSessionRes.TokenValue,
-			termOptions: termOptions
-		})
-	}
-	
-	connection.onerror = (error) => {
-		console.log(`WebSocket error: ${error}`)
-	}
-
-	connection.onmessage = (event) => {
-		var agentMessage = ssm.decode(event.data);
-		//console.log(agentMessage);
-		if (agentMessage.payloadType === 1) {
-			ssm.sendACK(connection, agentMessage);
-			process.stdout.write(agentMessage.payload);
-		}
-	}
-
-	connection.onclose = () => {
-		console.log("websocket closed")
-	}
+  var startSessionRes = {
+    TokenValue: "your-token-value",
+    StreamUrl: "ws://xxxxxxxxxxx"
+  };
+  
+  const rl = readline.createInterface({
+    input: process.stdin,
+    output: null
+  });
+  readline.emitKeypressEvents(process.stdin);
+  process.stdin.on('keypress', (str, key) => {
+    if (connection.readyState === connection.OPEN) {
+      ssm.sendText(connection, str);
+    }
+  });
+  
+  const WebSocket = require('ws')
+  const connection = new WebSocket(startSessionRes.StreamUrl)
+  
+  connection.onopen = () => {
+    ssm.init(connection, {
+      token: startSessionRes.TokenValue,
+      termOptions: termOptions
+    })
+  }
+  
+  connection.onerror = (error) => {
+    console.log(`WebSocket error: ${error}`)
+  }
+  
+  connection.onmessage = (event) => {
+    var agentMessage = ssm.decode(event.data);
+    //console.log(agentMessage);
+    if (agentMessage.payloadType === 1) {
+      ssm.sendACK(connection, agentMessage);
+      process.stdout.write(agentMessage.payload);
+    }
+  }
+  
+  connection.onclose = () => {
+    console.log("websocket closed")
+  }
 })();
 ```
 
@@ -198,9 +197,9 @@ The flow is the following :
 
 ```json
 {
-	"MessageSchemaVersion": "1.0",
-	"RequestId": "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx",
-	"TokenValue": "<YOUR-TOKEN-VALUE>"
+  "MessageSchemaVersion": "1.0",
+  "RequestId": "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx",
+  "TokenValue": "<YOUR-TOKEN-VALUE>"
 }
 ```
 
@@ -249,20 +248,20 @@ For the communication part :
 * each message with type "output_stream_data" must be acknowledged using an "acknowledge" type message which is referencing the messageID (uuid) of the message that has been received.
 * when you send text, you send a message with type "input_stream_data", this message must be sent with an incremental sequence number (note the sequenceNumber field in the model above). The message will then be acknowledged by the server
 
-There are possibly many features I didn't implement, for instance I didn't implement yet the ping message which is used to prevent the shell from being terminated due to inactivity
+There are possibly some features I didn't implement, for instance I didn't implement yet the ping message which is used to prevent the shell from being terminated due to inactivity
 
 ## Note about simultaneous terminal session
 
-There is this sequence number that is required and re-initiliazed to 0 each time you call the `init()` function. If you need to have more than 1 terminal in the same time, there will be an issue because each session must have its own sequential number. 
+There is this sequence number that is required and re-initiliazed to 0 each time you call the `init()` function. If you need to have more than 1 terminal at the same time, there will be an issue because each session must have its own sequential number. 
 
-On way is to use you own sequential number and set it to 0 before the call to `init()` and increment it before calling `sendText()`. It will be like this :
+One way is to use you own sequential number and set it to 0 before the call to `init()` and increment it before calling `sendText()`. It will be like this :
 
 In websocket open :
 ```javascript
 customSeqNum = 0;
 ssm.init(connection, {
-	token: startSessionRes.TokenValue,
-	termOptions: termOptions
+  token: startSessionRes.TokenValue,
+  termOptions: termOptions
 });
 ```
 
@@ -271,7 +270,7 @@ When you write text:
 ssm.sendText(connection, str, customSeqNum);
 ```
 
-So this way you can open any number of session simultaneously
+So this way you can open any number of sessions simultaneously
 
 ## Dependencies
 

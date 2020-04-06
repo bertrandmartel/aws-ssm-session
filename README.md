@@ -18,35 +18,30 @@ Start a shell session in the Browser            |  Start a shell session using N
 ```bash
 git clone git@github.com:bertrandmartel/aws-ssm-session.git
 cd aws-ssm-session
-cd node-example
 npm i
-npm start
+node ./test/node/app.js
 ```
 You will be prompted for AWS Region, AWS profile (default if not specified), choose your instance and a session is started directly
 
 ### Browser
 
+We need to generate the Websocket stream URL and token value using AWS API using a NodeJS script :
+
 ```bash
 git clone git@github.com:bertrandmartel/aws-ssm-session.git
 cd aws-ssm-session
-
-# we need to generate the Websocket stream URL and token value using AWS API using a NodeJS script
-cd scripts
 npm i
-npm start
+node scripts/generate-session.js
 ```
 
 In another shell start the local webserver
 
 ```bash
-cd aws-ssm-session
 npm install http-server -g
 http-server -a localhost -p 3000
 ```
 
-Go to http://localhost:3000/web-example/ and enter your token & stream value from the output of the first shell then click "start session"
-
-Note that the browser project example has **no** external dependencies (recommended for security reason)
+Go to http://localhost:3000/test/web and enter your token & stream value from the output of the first shell then click "start session"
 
 ## Installation
 
@@ -59,11 +54,11 @@ npm i --save ssm-session
 ## Usage
 
 ```javascript
-const ssm = require("ssm-session")
+const { ssm } = require("ssm-session");
 ```
 or 
 ```javascript
-import * as ssm from "ssm-session";
+import { ssm } from "ssm-session";
 ```
 
 ## Example
@@ -73,7 +68,7 @@ import * as ssm from "ssm-session";
 The following code start a session and use [Xterm.js](https://xtermjs.org/) to write the result to and to listen to key events :
 
 ```javascript
-const ssm = window.ssm
+import { ssm } from "ssm-session";
 
 var socket;
 var terminal;
@@ -101,7 +96,7 @@ function startSession(){
     console.log("Websocket closed")
   });
   socket.addEventListener('message', function (event) {
-    var agentMessage = ssm.SSMDecode(event.data);
+    var agentMessage = ssm.decode(event.data);
     //console.log(agentMessage);
     if (agentMessage.payloadType === 1){
       ssm.sendACK(socket, agentMessage);
@@ -139,7 +134,7 @@ The following code use [ws](https://github.com/websockets/ws) as websocket clien
 const session = require("../scripts/aws-get-session");
 const WebSocket = require('ws');
 const readline = require('readline');
-const ssm = require("ssm-session")
+const { ssm } = require("ssm-session");
 
 const termOptions = {
   rows: 34,
@@ -178,7 +173,7 @@ const termOptions = {
 	}
 
 	connection.onmessage = (event) => {
-		var agentMessage = ssm.SSMDecode(event.data);
+		var agentMessage = ssm.decode(event.data);
 		//console.log(agentMessage);
 		if (agentMessage.payloadType === 1) {
 			ssm.sendACK(connection, agentMessage);
@@ -211,7 +206,7 @@ The flow is the following :
 
 From this moment the protocol is not JSON anymore. It is implemented in the offical [Amazon SSM agent](https://github.com/aws/amazon-ssm-agent) which is required if you want start a SSM session from the AWS CLI. The payload must be sent & receive according [this binary format](https://github.com/aws/amazon-ssm-agent/blob/c65d8ac29a8bbe6cd3f7cea778c1eeb1b06d49a3/agent/session/contracts/agentmessage.go)
 
-Also more specifically :
+Also more specifically from [amazon-ssm-agent source code](https://github.com/aws/amazon-ssm-agent/blob/c65d8ac29a8bbe6cd3f7cea778c1eeb1b06d49a3/agent/session/contracts/agentmessage.go):
 
 ```
 // HL - HeaderLength is a 4 byte integer that represents the header length.
@@ -247,7 +242,7 @@ var agentMessage = {
 };
 ```
 
-Byte order is Big endian (!)
+Byte order is Big endian
 
 For the communication part :
 
@@ -255,6 +250,32 @@ For the communication part :
 * when you send text, you send a message with type "input_stream_data", this message must be sent with an incremental sequence number (note the sequenceNumber field in the model above). The message will then be acknowledged by the server
 
 There are possibly many features I didn't implement, for instance I didn't implement yet the ping message which is used to prevent the shell from being terminated due to inactivity
+
+## Note about simultaneous terminal session
+
+There is this sequence number that is required and re-initiliazed to 0 each time you call the `init()` function. If you need to have more than 1 terminal in the same time, there will be an issue because each session must have its own sequential number. 
+
+On way is to use you own sequential number and set it to 0 before the call to `init()` and increment it before calling `sendText()`. It will be like this :
+
+In websocket open :
+```javascript
+customSeqNum = 0;
+ssm.init(connection, {
+	token: startSessionRes.TokenValue,
+	termOptions: termOptions
+});
+```
+
+When you write text:
+```javascript
+ssm.sendText(connection, str, customSeqNum);
+```
+
+So this way you can open any number of session simultaneously
+
+## Dependencies
+
+* An embedded version of sha256: https://github.com/geraintluff/sha256
 
 ## License
 

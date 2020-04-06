@@ -1,10 +1,9 @@
 "use strict"
 
-const session = require("../scripts/aws-get-session");
+const session = require("../../scripts/aws-get-session");
 const WebSocket = require('ws');
 const readline = require('readline');
-const ssm = require("../ssm.js")
-
+const { ssm } = require("ssm-session");
 
 const termOptions = {
   rows: 34,
@@ -42,7 +41,7 @@ const termOptions = {
 	}
 
 	connection.onmessage = (event) => {
-		var agentMessage = ssm.SSMDecode(event.data);
+		var agentMessage = ssm.decode(event.data);
 		//console.log(agentMessage);
 		if (agentMessage.payloadType === 1) {
 			ssm.sendACK(connection, agentMessage);

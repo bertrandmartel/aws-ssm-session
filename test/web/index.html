@@ -40,8 +40,8 @@
 	  <div class="form-group">
 	    <label>Credentials can only be used once. When a session is closed you must enter a new stream URL and a new token value to start a new session</label>
 	  </div>
-	  <button type="button" onclick="startSession()" class="btn btn-primary">Start Session</button>
-	  <button type="button" onclick="stopSession()" class="btn btn-danger">Stop Session</button>
+	  <button type="button" id="startSessionBtn" class="btn btn-primary">Start Session</button>
+	  <button type="button" id="stopSessionBtn" class="btn btn-danger">Stop Session</button>
 	  <div id="terminal" style='margin-top:20px;'></div>
 	  	<div class="toast alertMessage" role="alert" aria-live="assertive" aria-atomic="true" id="alertMessage">
 			<div class="toast-header">
@@ -58,9 +58,8 @@
 	 <script src="vendor/js/jquery-3.4.1.slim.min.js"></script>
 	 <script src="vendor/js/bootstrap.min.js"></script>
 	 <script src="vendor/js/xterm.min.js"></script>
-	 <script src="../ssm.js"></script>
-	 <script>
-	 	const ssm = window.ssm
+	 <script type="module">
+	 	import {ssm} from "../../src/index.js"
 
 		var socket;
 		var terminal;
@@ -71,12 +70,13 @@
 		};
 
 		$(document).ready(function() {
-		  console.log( "ready!" );
 		  $('.toast').toast({
 		    delay: 3500
-		  })
+		  });
+		  
 		});
-
+		$("#startSessionBtn").click(startSession);
+		  $("#stopSessionBtn").click(stopSession);
 		function startSession(){
 		  var tokenValue = document.getElementById("tokenValue").value;
 		  var websocketStreamURL = document.getElementById("websocketStreamURL").value;
@@ -103,7 +103,7 @@
 		    showMessage("Websocket closed")
 		  });
 		  socket.addEventListener('message', function (event) {
-		    var agentMessage = ssm.SSMDecode(event.data);
+		    var agentMessage = ssm.decode(event.data);
 		    //console.log(agentMessage);
 		    if (agentMessage.payloadType === 1){
 		      ssm.sendACK(socket, agentMessage);

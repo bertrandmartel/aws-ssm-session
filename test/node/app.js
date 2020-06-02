@@ -43,10 +43,12 @@ const termOptions = {
 	connection.onmessage = (event) => {
 		var agentMessage = ssm.decode(event.data);
 		//console.log(agentMessage);
-		if (agentMessage.payloadType === 1) {
-			ssm.sendACK(connection, agentMessage);
-			process.stdout.write(agentMessage.payload);
-		}
+		ssm.sendACK(connection, agentMessage);
+        if (agentMessage.payloadType === 1){
+          process.stdout.write(agentMessage.payload);
+        } else if (agentMessage.payloadType === 17){
+          ssm.sendInitMessage(connection, termOptions);
+        }
 	}
 
 	connection.onclose = () => {

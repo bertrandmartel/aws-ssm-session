@@ -101,9 +101,11 @@ function startSession(){
   socket.addEventListener('message', function (event) {
     var agentMessage = ssm.decode(event.data);
     //console.log(agentMessage);
+    ssm.sendACK(socket, agentMessage);
     if (agentMessage.payloadType === 1){
-      ssm.sendACK(socket, agentMessage);
       terminal.write(agentMessage.payload)
+    } else if (agentMessage.payloadType === 17){
+      ssm.sendInitMessage(socket, termOptions);
     }
   });
 }
@@ -178,9 +180,11 @@ const termOptions = {
   connection.onmessage = (event) => {
     var agentMessage = ssm.decode(event.data);
     //console.log(agentMessage);
-    if (agentMessage.payloadType === 1) {
-      ssm.sendACK(connection, agentMessage);
+    ssm.sendACK(socket, agentMessage);
+    if (agentMessage.payloadType === 1){
       process.stdout.write(agentMessage.payload);
+    } else if (agentMessage.payloadType === 17){
+      ssm.sendInitMessage(socket, termOptions);
     }
   }
   

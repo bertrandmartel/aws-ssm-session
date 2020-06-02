@@ -23,21 +23,21 @@ function buildAgentMessage(payload, messageType, sequenceNumber, payloadType, fl
 }
 
 function parseUuid(buf){
-	var part1, part2, part3, part4, part5;
+	var part1, part2, part3, part4, part5, i;
 	part1 = part2 = part3 = part4 = part5 = "";
-	for (var i = 8; i < 12;i++) {
+	for (i = 8; i < 12;i++) {
 		part1 +=formatNum(buf[i].toString(16));
 	}
-	for (var i = 12; i < 14;i++) {
+	for (i = 12; i < 14;i++) {
 		part2 +=formatNum(buf[i].toString(16));
 	}
-	for (var i = 14; i < 16;i++) {
+	for (i = 14; i < 16;i++) {
 		part3 +=formatNum(buf[i].toString(16));
 	}
-	for (var i = 0; i < 2;i++) {
+	for (i = 0; i < 2;i++) {
 		part4 +=formatNum(buf[i].toString(16));
 	}
-	for (var i = 2; i < 8;i++) {
+	for (i = 2; i < 8;i++) {
 		part5 +=formatNum(buf[i].toString(16));
 	}
 	return `${part1}-${part2}-${part3}-${part4}-${part5}`
@@ -119,19 +119,20 @@ function putLong(buf, data, offset){
 }
 
 function putString(buf, data, offset, maxLength){
+	var i;
 	if (maxLength){
 		var diff = 0;
 		if (data.length < maxLength){
 			diff = maxLength - data.length;
-			for (var i = 0; i < diff; i++){
+			for (i = 0; i < diff; i++){
 				buf[offset+i] = 0;
 			}
 		}
-		for (var i = diff; i < maxLength; i++) {
+		for (i = diff; i < maxLength; i++) {
 			buf[offset+i] = data[i-diff] ? data[i-diff].charCodeAt(0) : 0;
 		}
 	} else {
-		for (var i = 0; i < data.length; i++) {
+		for (i = 0; i < data.length; i++) {
 			buf[offset+i] = data[i] ? data[i].charCodeAt(0) : 0;
 		}
 	}
@@ -225,6 +226,9 @@ var ssm = {
 		connection.send(ssm.buildInitMessage(data.termOptions));
 	},
 
+	sendInitMessage: function(connection, termOptions){
+		connection.send(ssm.buildInitMessage(termOptions));
+	},
 	buildTokenMessage: function(token){
 		return JSON.stringify({
 			"MessageSchemaVersion": "1.0",
@@ -256,7 +260,7 @@ var ssm = {
 	},
 
 	buildInputMessage: function(text, sequenceNumber){
-		var inputMessage = buildAgentMessage(text, "input_stream_data", sequenceNumber, INPUT_TYPE, 0);
+		var inputMessage = buildAgentMessage(text, "input_stream_data", sequenceNumber, INPUT_TYPE, sequenceNumber == 1 ? 0 : 1);
 		//console.log("inputMessage",inputMessage);
 		return agentMessageToBuffer(inputMessage)
 	},
@@ -266,7 +270,7 @@ var ssm = {
 	},
 
 	sendText: function(connection, text, sequenceNum){
-		if (!sequenceNum){
+		if (typeof sequenceNum === 'undefined'){
 			messageSequenceNumber++;
 			connection.send(ssm.buildInputMessage(text, messageSequenceNumber))
 		} else {

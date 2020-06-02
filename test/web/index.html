@@ -105,10 +105,12 @@
 		  socket.addEventListener('message', function (event) {
 		    var agentMessage = ssm.decode(event.data);
 		    //console.log(agentMessage);
-		    if (agentMessage.payloadType === 1){
-		      ssm.sendACK(socket, agentMessage);
-		      terminal.write(agentMessage.payload)
-		    }
+		    ssm.sendACK(socket, agentMessage);
+	        if (agentMessage.payloadType === 1){
+	          terminal.write(agentMessage.payload)
+	        } else if (agentMessage.payloadType === 17){
+	          ssm.sendInitMessage(socket, termOptions);
+	        }
 		  });
 		}
 

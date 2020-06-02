@@ -1,6 +1,6 @@
 {
   "name": "ssm-session",
-  "version": "1.0.3",
+  "version": "1.0.4",
   "description": "Javascript library for starting an AWS SSM session compatible with Browser and NodeJS",
   "main": "dist/index.js",
   "scripts": {

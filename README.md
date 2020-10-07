@@ -35,6 +35,7 @@ We need to generate the Websocket stream URL and token value using AWS API using
 git clone git@github.com:bertrandmartel/aws-ssm-session.git
 cd aws-ssm-session
 npm i
+npm run build
 node scripts/generate-session.js
 ```
 

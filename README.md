@@ -22,6 +22,7 @@ Start a shell session in the Browser            |  Start a shell session using N
 git clone git@github.com:bertrandmartel/aws-ssm-session.git
 cd aws-ssm-session
 npm i
+npm run build
 node ./test/node/app.js
 ```
 You will be prompted for AWS Region, AWS profile (default if not specified), choose your instance and a session is started directly

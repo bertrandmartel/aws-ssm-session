@@ -9,6 +9,6 @@
   "author": "",
   "license": "MIT",
   "dependencies": {
-    "ssm-session": "^1.0.1"
+    "ssm-session": "^1.0.4"
   }
 }

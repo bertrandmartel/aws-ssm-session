@@ -133,12 +133,12 @@ function initTerminal() {
 
 ### NodeJS
 
-The following code uses [ws](https://github.com/websockets/ws) as websocket client and listens to key events :
+The following code uses [ws](https://github.com/websockets/ws) as websocket client and listens to key events, from the [examples/node](https://github.com/bertrandmartel/aws-ssm-session/tree/master/examples/node) directory :
 
 ```javascript
 "use strict"
 
-const session = require("../scripts/aws-get-session");
+const session = require("../../scripts/aws-get-session");
 const WebSocket = require('ws');
 const readline = require('readline');
 const { ssm } = require("ssm-session");
@@ -149,50 +149,47 @@ const termOptions = {
 };
 
 (async () => {
-  var startSessionRes = {
-    TokenValue: "your-token-value",
-    StreamUrl: "ws://xxxxxxxxxxx"
-  };
-  
-  const rl = readline.createInterface({
-    input: process.stdin,
-    output: null
-  });
-  readline.emitKeypressEvents(process.stdin);
-  process.stdin.on('keypress', (str, key) => {
-    if (connection.readyState === connection.OPEN) {
-      ssm.sendText(connection, str);
-    }
-  });
-  
-  const WebSocket = require('ws')
-  const connection = new WebSocket(startSessionRes.StreamUrl)
-  
-  connection.onopen = () => {
-    ssm.init(connection, {
-      token: startSessionRes.TokenValue,
-      termOptions: termOptions
-    })
-  }
-  
-  connection.onerror = (error) => {
-    console.log(`WebSocket error: ${error}`)
-  }
-  
-  connection.onmessage = (event) => {
-    var agentMessage = ssm.decode(event.data);
-    //console.log(agentMessage);
-    ssm.sendACK(socket, agentMessage);
-    if (agentMessage.payloadType === 1){
-      process.stdout.write(agentMessage.payload);
-    } else if (agentMessage.payloadType === 17){
-      ssm.sendInitMessage(socket, termOptions);
-    }
-  }
-  
-  connection.onclose = () => {
-    console.log("websocket closed")
-  }
+	var startSessionRes = await session();
+
+	const rl = readline.createInterface({
+		input: process.stdin,
+		output: null
+	});
+	readline.emitKeypressEvents(process.stdin);
+	process.stdin.on('keypress', (str, key) => {
+		if (connection.readyState === connection.OPEN) {
+			ssm.sendText(connection, str);
+		}
+	});
+	
+	const WebSocket = require('ws')
+	const connection = new WebSocket(startSessionRes.StreamUrl)
+
+	connection.onopen = () => {
+		ssm.init(connection, {
+			token: startSessionRes.TokenValue,
+			termOptions: termOptions
+		})
+	}
+	
+	connection.onerror = (error) => {
+		console.log(`WebSocket error: ${error}`)
+	}
+
+	connection.onmessage = (event) => {
+		var agentMessage = ssm.decode(event.data);
+		//console.log(agentMessage);
+		ssm.sendACK(connection, agentMessage);
+        if (agentMessage.payloadType === 1){
+          process.stdout.write(agentMessage.payload);
+        } else if (agentMessage.payloadType === 17){
+          ssm.sendInitMessage(connection, termOptions);
+        }
+	}
+
+	connection.onclose = () => {
+		console.log("websocket closed")
+	}
 })();
 ```
 

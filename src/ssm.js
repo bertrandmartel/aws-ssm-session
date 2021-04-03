@@ -2,7 +2,7 @@ import sha256 from "./sha256.js";
 
 const ACK_TYPE = 3;
 const INPUT_TYPE = 1;
-const OUTPUT_TYPE = 0;
+//const OUTPUT_TYPE = 0;
 
 var messageSequenceNumber = 0;
 
@@ -106,10 +106,10 @@ function generateDigest(data) {
   return sha256(data).substring(0, 32);
 }
 
-function stringToBuffer(data) {
-  var enc = new TextEncoder();
-  return enc.encode(data);
-}
+// function stringToBuffer(data) {
+//   var enc = new TextEncoder();
+//   return enc.encode(data);
+// }
 
 function agentMessageToBuffer(payload) {
   var buf = new Uint8Array(116 + payload.payload.length + 4);

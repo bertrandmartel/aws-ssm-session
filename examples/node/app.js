@@ -1,7 +1,6 @@
 "use strict"
 
 const session = require("../../scripts/aws-get-session");
-const WebSocket = require('ws');
 const readline = require('readline');
 const { ssm } = require("ssm-session");
 
@@ -15,7 +14,7 @@ const termOptions = {
 	//console.log(`TokenValue: ${startSessionRes.TokenValue}`)
 	//console.log(`StreamUrl: ${startSessionRes.StreamUrl}`)
 
-	const rl = readline.createInterface({
+	readline.createInterface({
 		input: process.stdin,
 		output: null
 	});

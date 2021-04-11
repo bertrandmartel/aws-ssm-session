@@ -24,7 +24,7 @@ git clone git@github.com:bertrandmartel/aws-ssm-session.git
 cd aws-ssm-session
 npm i
 npm run build
-node ./test/node/app.js
+node ./examples/node/app.js
 ```
 
 You will be prompted for AWS Region, AWS profile (default if not specified), choose your instance and a session is started directly
@@ -44,11 +44,11 @@ node scripts/generate-session.js
 In another shell start the local webserver
 
 ```bash
-npm install http-server -g
-http-server -a localhost -p 3000
+cd examples/web
+npm start
 ```
 
-Go to http://localhost:3000/test/web and enter your token & stream value from the output of the first shell then click "start session"
+Go to http://localhost:8080 and enter your token & stream value from the output of the first shell then click "start session"
 
 ## Installation
 
@@ -74,22 +74,43 @@ import { ssm } from "ssm-session";
 
 ### Browser
 
-The following code starts a session and use [Xterm.js](https://xtermjs.org/) to write the result and listen to key events :
+The following code starts a session and use [Xterm.js](https://xtermjs.org/) to write the result and listen to key events, checkout the [`web` directory](https://github.com/bertrandmartel/aws-ssm-session/tree/master/web)
 
 ```javascript
+import { Terminal } from "xterm";
+import "xterm/css/xterm.css";
+
 import { ssm } from "ssm-session";
 
 var socket;
 var terminal;
+const textDecoder = new TextDecoder();
+const textEncoder = new TextEncoder();
 
 const termOptions = {
   rows: 34,
   cols: 197,
+  fontFamily: "Fira Code, courier-new, courier, monospace",
 };
 
+$(document).ready(function () {
+  $(".toast").toast({
+    delay: 3500,
+  });
+});
+$("#startSessionBtn").click(startSession);
+$("#stopSessionBtn").click(stopSession);
 function startSession() {
   var tokenValue = document.getElementById("tokenValue").value;
   var websocketStreamURL = document.getElementById("websocketStreamURL").value;
+  if (!tokenValue) {
+    showMessage("Token value is required to start session");
+    return;
+  }
+  if (!websocketStreamURL) {
+    showMessage("Websocket stream URL is required to start session");
+    return;
+  }
 
   socket = new WebSocket(websocketStreamURL);
   socket.binaryType = "arraybuffer";
@@ -102,14 +123,13 @@ function startSession() {
     });
   });
   socket.addEventListener("close", function (event) {
-    console.log("Websocket closed");
+    showMessage("Websocket closed");
   });
   socket.addEventListener("message", function (event) {
     var agentMessage = ssm.decode(event.data);
-    //console.log(agentMessage);
     ssm.sendACK(socket, agentMessage);
     if (agentMessage.payloadType === 1) {
-      terminal.write(agentMessage.payload);
+      terminal.write(textDecoder.decode(agentMessage.payload));
     } else if (agentMessage.payloadType === 17) {
       ssm.sendInitMessage(socket, termOptions);
     }
@@ -123,15 +143,18 @@ function stopSession() {
   terminal.dispose();
 }
 
+function showMessage(message) {
+  $("#toastMessage").text(message);
+  $("#alertMessage").toast("show");
+}
+
 function initTerminal() {
-  terminal = new window.Terminal(termOptions);
+  terminal = new Terminal(termOptions);
   terminal.open(document.getElementById("terminal"));
-  terminal.onKey((e) => {
-    ssm.sendText(socket, e.key);
+  terminal.onData(function (data) {
+    ssm.sendText(socket, textEncoder.encode(data));
   });
-  terminal.on("paste", function (data) {
-    ssm.sendText(socket, data);
-  });
+  terminal.focus();
 }
 ```
 
@@ -146,6 +169,10 @@ const session = require("../../scripts/aws-get-session");
 const WebSocket = require("ws");
 const readline = require("readline");
 const { ssm } = require("ssm-session");
+const util = require("util");
+
+const textDecoder = new util.TextDecoder();
+const textEncoder = new util.TextEncoder();
 
 const termOptions = {
   rows: 34,
@@ -160,14 +187,14 @@ const termOptions = {
     output: null,
   });
   readline.emitKeypressEvents(process.stdin);
+
+  const connection = new WebSocket(startSessionRes.StreamUrl);
+
   process.stdin.on("keypress", (str, key) => {
     if (connection.readyState === connection.OPEN) {
-      ssm.sendText(connection, str);
+      ssm.sendText(connection, textEncoder.encode(str));
     }
   });
-
-  const WebSocket = require("ws");
-  const connection = new WebSocket(startSessionRes.StreamUrl);
 
   connection.onopen = () => {
     ssm.init(connection, {
@@ -182,10 +209,9 @@ const termOptions = {
 
   connection.onmessage = (event) => {
     var agentMessage = ssm.decode(event.data);
-    //console.log(agentMessage);
     ssm.sendACK(connection, agentMessage);
     if (agentMessage.payloadType === 1) {
-      process.stdout.write(agentMessage.payload);
+      process.stdout.write(textDecoder.decode(agentMessage.payload));
     } else if (agentMessage.payloadType === 17) {
       ssm.sendInitMessage(connection, termOptions);
     }
@@ -248,7 +274,7 @@ var agentMessage = {
   payloadDigest: getString(buf.slice(80, 112)), // 32 bytes
   payloadType: getInt(buf.slice(112, 116)), // 4 bytes
   payloadLength: getInt(buf.slice(116, 120)), // 4 bytes
-  payload: getString(buf.slice(120, buf.byteLength)), //variable length
+  payload: buf.slice(120, buf.byteLength), //variable length
 };
 ```
 

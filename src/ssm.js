@@ -123,7 +123,9 @@ function agentMessageToBuffer(payload) {
   putString(buf, payload.payloadDigest, 80);
   putInt(buf, payload.payloadType, 112);
   putInt(buf, payload.payloadLength, 116);
-  putString(buf, payload.payload, 120);
+  typeof payload.payload == "string"
+    ? putString(buf, payload.payload, 120)
+    : putByteArray(buf, payload.payload, 120);
   return buf;
 }
 
@@ -238,16 +240,13 @@ var ssm = {
       payloadDigest: getString(buf.slice(80, 112)), //32
       payloadType: getInt(buf.slice(112, 116)), //4
       payloadLength: getInt(buf.slice(116, 120)), //4
-      payload: getString(buf.slice(120, buf.byteLength)),
+      payload: buf.slice(120, buf.byteLength),
     };
-    console.log(agentMessage);
     var res = buf.slice(120, buf.byteLength);
     var charList = "";
     for (var i = 0; i < res.length; i++) {
       charList += String.fromCharCode(res[i]);
     }
-    console.log(charList);
-    console.log(res);
     return agentMessage;
   },
 
@@ -280,7 +279,6 @@ var ssm = {
       ACK_TYPE,
       1
     );
-    //console.log("initMessage",initMessage);
     return agentMessageToBuffer(initMessage);
   },
 
@@ -298,7 +296,6 @@ var ssm = {
       ACK_TYPE,
       0
     );
-    //console.log("acknowledge",ackMessage);
     return agentMessageToBuffer(ackMessage);
   },
 
@@ -310,7 +307,6 @@ var ssm = {
       INPUT_TYPE,
       sequenceNumber == 1 ? 0 : 1
     );
-    //console.log("inputMessage",inputMessage);
     return agentMessageToBuffer(inputMessage);
   },
 
@@ -325,7 +321,6 @@ var ssm = {
   },
 
   sendText: function (connection, text, sequenceNum) {
-    console.log(text);
     if (typeof sequenceNum === "undefined") {
       messageSequenceNumber++;
       connection.send(ssm.buildInputMessage(text, messageSequenceNumber));

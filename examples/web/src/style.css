@@ -1,0 +1,9 @@
+.websocketParams {
+  margin: 20px;
+}
+.alertMessage {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  margin: 20px;
+}

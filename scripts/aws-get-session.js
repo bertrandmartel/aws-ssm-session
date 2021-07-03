@@ -44,13 +44,6 @@ const regionList = [
 
 const readline = require("readline");
 
-/*
-(async () => {
-	console.log(await startSessionTask())
-})();
-
-*/
-
 async function startSessionTask() {
   //select region
   for (var i = 0; i < regionList.length; i++) {

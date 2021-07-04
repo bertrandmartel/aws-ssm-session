@@ -223,6 +223,50 @@ const termOptions = {
 })();
 ```
 
+## ECS tasks
+
+This library also works with [ECS Tasks execute commands](https://aws.amazon.com/fr/blogs/containers/new-using-amazon-ecs-exec-access-your-containers-fargate-ec2/) on Fargate and Amazon EC2.
+
+You can use the nodejs script to generate the session details:
+
+```
+node ./scripts/generate-session-ecs.js
+```
+
+It will prompt user with aws region, aws profile, ecs cluster, tasks, containers and will generate the session details including Token and websocket stream URL.
+
+Note that ECS restricts by default a maximum of 2 simultaneous connections. You will need to explicitely terminate the connections by listing and deleting them if necessary (see [Terminating the connections](#terminating-the-connections-))
+
+- list ssm sessions that are targetting ECS tasks:
+
+```bash
+aws ssm describe-sessions --state Active | jq -r '.Sessions[] | select(.Target |  startswith("ecs:")) | .SessionId'
+```
+
+- delete one session by session ID:
+
+```bash
+aws ssm terminate-session --session-id [SESSION_ID]
+```
+
+Note: For EC2 instance, the target is the instance ID. For ECS taks, the target is a concatenation of cluster name, task ID and container ID, see [this](https://github.com/aws/aws-cli/blob/45b0063b2d0b245b17a57fd9eebd9fcc87c4426a/awscli/customizations/ecs/executecommand.py#L70-L72)
+
+## Terminating the connections
+
+To terminate the connection, one would either execute the `exit` command or use the CLI/API with :
+
+- list ssm sessions:
+
+```bash
+aws ssm describe-sessions --state Active | jq -r '.Sessions[]  | .SessionId'
+```
+
+- delete one session by session ID:
+
+```bash
+aws ssm terminate-session --session-id [SESSION_ID]
+```
+
 ## How it works ?
 
 The flow is the following :

@@ -1,0 +1,19 @@
+{
+    "family": "ecs-exec-demo",
+    "networkMode": "awsvpc",
+    "executionRoleArn": "arn:aws:iam::[ACCOUND_ID]:role/ecs-test-ECSTaskExecutionRole-1I6SJFM7O1GMH",
+    "taskRoleArn": "arn:aws:iam::[ACCOUND_ID]:role/ecs-test-ECSExecDemoTaskRole-SZZ5OJXP0NBJ",
+    "containerDefinitions": [
+      {
+        "name": "nginx",
+        "image": "nginx",
+        "linuxParameters": {
+          "initProcessEnabled": true
+        }
+      }
+    ],
+    "requiresCompatibilities": ["FARGATE"],
+    "cpu": "256",
+    "memory": "512"
+  }
+  

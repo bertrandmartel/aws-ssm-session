@@ -1,0 +1,84 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Description: ECS exec demo infra
+Metadata:
+  Author:
+    Name: Bertrand Martel
+Resources:
+  KmsKey:
+    Type: AWS::KMS::Key
+    Properties:
+      KeyPolicy:
+        Version: "2012-10-17"
+        Id: key-default
+        Statement:
+          - Sid: "Enable IAM User Permissions"
+            Effect: "Allow"
+            Principal:
+              AWS: "arn:aws:iam::[ACCOUND_ID]:root"
+            Action: "kms:*"
+            Resource: "*"
+  Cluster:
+    Type: AWS::ECS::Cluster
+    DependsOn: KmsKey
+    Properties:
+      ClusterName: "ecs-exec-demo-cluster"
+      Configuration:
+        ExecuteCommandConfiguration:
+          KmsKeyId: !GetAtt KmsKey.Arn
+          Logging: NONE
+      Tags:
+        - Key: Name
+          Value: !Sub "${AWS::StackName}-EcsCluster"
+  ECSTaskExecutionRole:
+    Type: AWS::IAM::Role
+    Properties:
+      PermissionsBoundary: !ImportValue AdminBoundary
+      AssumeRolePolicyDocument:
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+                - ecs-tasks.amazonaws.com
+            Action:
+              - sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AmazonECSTaskExecutionRolePolicy
+      Tags:
+        - Key: Name
+          Value: !Sub "${AWS::StackName}"
+  ECSExecDemoTaskRole:
+    Type: AWS::IAM::Role
+    Properties:
+      PermissionsBoundary: !ImportValue AdminBoundary
+      AssumeRolePolicyDocument:
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+                - ecs-tasks.amazonaws.com
+            Action:
+              - sts:AssumeRole
+      Policies:
+        - PolicyName: ecs-exec-demo-task-role-policy
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: Allow
+                Action:
+                  - "ssmmessages:CreateControlChannel"
+                  - "ssmmessages:CreateDataChannel"
+                  - "ssmmessages:OpenDataChannel"
+                  - "ssmmessages:OpenControlChannel"
+                Resource: "*"
+              - Effect: Allow
+                Action:
+                  - "kms:Decrypt"
+                Resource: !GetAtt KmsKey.Arn
+
+Outputs:
+  Cluster:
+    Value: !Ref Cluster
+  ExecutionRoleArn:
+    Value: !GetAtt ECSTaskExecutionRole.Arn
+  TaskRolECSExecDemoTaskRoleArn:
+    Value: !GetAtt ECSExecDemoTaskRole.Arn

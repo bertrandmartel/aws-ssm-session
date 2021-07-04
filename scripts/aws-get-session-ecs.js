@@ -91,13 +91,31 @@ async function startSessionTask() {
   for (var i = 0; i < tasks.taskArns.length; i++) {
     console.log(`> ${tasks.taskArns[i].split("/")[2]}`);
   }
-  var task = tasks.taskArns[0].split("/")[2];
+  var taskId = tasks.taskArns[0].split("/")[2];
   if (tasks.taskArns.length > 1) {
-    task =
+    taskId =
       (await prompt(`Choose ECS task: `)) || tasks.taskArns[0].split("/")[2];
   }
 
-  return await executeCommand(ecs, ecsCluster, task);
+  var task = await describeTask(ecs, ecsCluster, taskId);
+  var containers = task.tasks[0].containers;
+  if (containers.length == 0) {
+    console.log(`no containers found in task ${taskId}`);
+    return "";
+  }
+  for (var i = 0; i < containers.length; i++) {
+    console.log(`> ${containers[i].name}`);
+  }
+  var containerId = containers[0].runtimeId;
+  if (containers.length > 1) {
+    containerId =
+      (await prompt(`Choose container: `)) || containers[0].runtimeId;
+  }
+  const target = `ecs:${ecsCluster}_${taskId}_${containerId}`;
+
+  //start session
+  var ssm = new AWS.SSM();
+  return await startSession(ssm, target);
 }
 
 async function prompt(message) {
@@ -138,19 +156,29 @@ async function listTasks(ecs, cluster) {
   });
 }
 
-async function executeCommand(ecs, cluster, task) {
+async function describeTask(ecs, cluster, task) {
   return new Promise(function (resolve, reject) {
-    ecs.executeCommand(
-      { cluster: cluster, task: task, interactive: true, command: "sh" },
-      function (err, data) {
-        if (err) {
-          console.log(err);
-          reject(err);
-        } else {
-          resolve(data);
-        }
+    ecs.describeTasks({ cluster, tasks: [task] }, function (err, data) {
+      if (err) {
+        console.log(err);
+        reject(err);
+      } else {
+        resolve(data);
       }
-    );
+    });
+  });
+}
+
+async function startSession(ssm, target) {
+  return new Promise(function (resolve, reject) {
+    ssm.startSession({ Target: target }, function (err, data) {
+      if (err) {
+        console.log(err);
+        reject(err);
+      } else {
+        resolve(data);
+      }
+    });
   });
 }
 

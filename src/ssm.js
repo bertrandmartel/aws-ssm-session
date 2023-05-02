@@ -259,12 +259,30 @@ var ssm = {
   sendInitMessage: function (connection, termOptions) {
     connection.send(ssm.buildInitMessage(termOptions));
   },
+  
+  sendSizeData: function (connection, sizeData) {
+    const sizeDataMessage = ssm.buildSizeDataMessage(sizeData)
+    connection.send(sizeDataMessage);
+  },
+  
   buildTokenMessage: function (token) {
     return JSON.stringify({
       MessageSchemaVersion: "1.0",
       RequestId: uuidv4(),
       TokenValue: token,
     });
+  },
+
+  buildSizeDataMessage: function (sizeData) {
+    messageSequenceNumber++;
+    var sizeDataMessage = buildAgentMessage(
+      JSON.stringify(sizeData),
+      "input_stream_data",
+      messageSequenceNumber,
+      ACK_TYPE,
+      messageSequenceNumber == 1 ? 0 : 1
+    );
+    return agentMessageToBuffer(sizeDataMessage);
   },
 
   buildInitMessage: function (options) {
